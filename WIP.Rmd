@@ -11,11 +11,11 @@ library(xml2)
 library(reticulate)
 library(devtools)
 library(roxygen2)
+options(tibble.print_max = 100, tibble.print_min = 100)
 ```
 
 ```{r}
 load_all()
-options(tibble.print_max = 100, tibble.print_min = 100)
 ```
 
 ```{r}
@@ -46,18 +46,34 @@ extract_card_info <- function(card) {
 }
 ```
 
-```{r}
+```{r, eval=FALSE}
 card_dat <- mtgsdk$Card$where(set_name='Innistrad')$all() %>% map_df(extract_card_info)
 ```
 
-```{r}
+```{r, eval=FALSE}
 write_tsv(card_dat, path = "cards.tsv")
 ```
 
+```{r, eval = FALSE}
+basic_lands <- c("Plains", "Island", "Swamp", "Mountain", "Forest")
+```
+
 ```{r}
-card_dat %>% 
-  sample_n(3) %>% 
+df <- card_dat %>% 
+  sample_n(30) %>% 
   select(card_name = name, set = set_name) %>% 
+  filter(!(card_name %in% basic_lands)) %>%
+  mutate(set = case_when(set == "Magic: The Gathering-Commander"  ~ "Commander",
+                         set == "Magic: The Gathering-Conspiracy" ~ "Conspiracy",
+                         set == "Judge Gift Program"              ~ "Judge Promos",
+                         set == "Prerelease Events"               ~ "Prerelease Cards",
+                         TRUE                                     ~ set))
+```
+
+Flip cards are known broken, e.g. card named Fire Sprites.
+
+```{r}
+df[2,] %>% 
   pmap( ~ write_card_price_history(card_name = ..1,
                                    set = ..2,
                                    directory = data_dir))
