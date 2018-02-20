@@ -70,7 +70,7 @@ df <- card_dat %>%
                          TRUE                                     ~ set))
 ```
 
-Flip cards are known broken, e.g. card named Fire Sprites.
+Flip cards are known broken, e.g. card named Harvest Hand.
 
 ```{r}
 df[2,] %>% 
