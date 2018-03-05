@@ -21,11 +21,14 @@ load_all()
 ```{r}
 card_name <- "Snapcaster Mage"
 set <- "Innistrad"
+data_dir <- "/home/john/data/mtg/"
+```
+
+```{r}
 plot_card_price_history(card_name, set) %>% plot
 ```
 
 ```{r}
-data_dir <- "/home/john/data/mtg/"
 write_card_price_history(card_name = card_name, 
                          set = set,
                          directory = data_dir)
@@ -40,18 +43,42 @@ mtgsdk <- import("mtgsdk")
 extract_card_info <- function(card) {
   if (!identical(class(card),c("mtgsdk.card.Card", "python.builtin.object")))
     stop("Input is not of the correct class, c(\"mtgsdk.card.Card\", \"python.builtin.object\").")
-  list(name     = card$name,
-       set_code = card$set,
-       set_name = card$set_name)
+  list(name      = card$name,
+       set_code  = card$set,
+       set_name  = card$set_name,
+       layout    = card$layout,
+       name_list = card$names,
+       number    = card$number)
 }
 ```
 
 ```{r, eval=FALSE}
-card_dat <- mtgsdk$Card$where(set_name='Innistrad')$all() %>% map_df(extract_card_info)
+card_dat <- mtgsdk$Card$where(set_name='Innistrad')$all()
+```
+
+```{r}
+card_dat_parsed <- card_dat %>% map(extract_card_info)
+```
+
+```{r}
+save(card_dat_parsed, file = "cards.RData")
 ```
 
 ```{r, eval=FALSE}
-write_tsv(card_dat, path = "cards.tsv")
+write_tsv(card_dat_parsed, path = "cards.tsv")
+```
+
+Dealing with cards lacking normal layout:
+
+```{r, eval=FALSE, echo=FALSE}
+# This is just scratch work.
+head(card_dat_parsed,1000) %>% keep(~!is.null(.x$name_list))
+card_dat_parsed %>% keep(~(.x$name == "Nissa, Sage Animist"))
+#card_dat_parsed %>% keep(~((.x$layout != "normal") & str_detect(.x$number,"^[0-9]+a")))
+#card_dat_parsed %>% keep(~(.x$layout != "normal")) %>% keep(~str_detect(.x$number,"^[0-9]+$|^[0-9]+a$")) %>% length
+foo <- card_dat_parsed %>% keep( ~ str_detect(.x$number,"^[0-9]+$|^[0-9]+a$"))
+foo <- card_dat_parsed %>% keep( function(x) grepl("^[0-9]+$|^[0-9]+a$", x$number) )
+foo <- card_dat_parsed %>% keep( ~ !is.na(as.numeric(.x$number)) )
 ```
 
 ```{r, eval = FALSE}

@@ -1,7 +1,5 @@
 get_card_price_history <- function(card_name, set) {
   Sys.sleep(1)
-  print(set)
-  print(card_name)
   read_html(goldfish_url(card_name, set)) %>%
     xml_find_all("//script") %>%
     xml_text %>%
