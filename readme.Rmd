@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 This is my work in progress for parsing MTG Goldfish pages to extract card prices.
@@ -56,11 +58,11 @@ extract_card_info <- function(card) {
 card_dat <- mtgsdk$Card$where(set_name='Innistrad')$all()
 ```
 
-```{r}
+```{r, eval=FALSE}
 card_dat_parsed <- card_dat %>% map(extract_card_info)
 ```
 
-```{r}
+```{r, eval=FALSE}
 save(card_dat_parsed, file = "cards.RData")
 ```
 
@@ -85,7 +87,8 @@ foo <- card_dat_parsed %>% keep( ~ !is.na(as.numeric(.x$number)) )
 basic_lands <- c("Plains", "Island", "Swamp", "Mountain", "Forest")
 ```
 
-```{r}
+```{r, eval=FALSE}
+#This is broken until I can sort out Flip, Double Faced, etc. cards.
 df <- card_dat %>% 
   sample_n(30) %>% 
   select(card_name = name, set = set_name) %>% 
@@ -99,7 +102,8 @@ df <- card_dat %>%
 
 Flip cards are known broken, e.g. card named Harvest Hand.
 
-```{r}
+```{rm, eval=FALSE}
+#This is broken until I can sort out Flip, Double Faced, etc. cards.
 df[2,] %>% 
   pmap( ~ write_card_price_history(card_name = ..1,
                                    set = ..2,
