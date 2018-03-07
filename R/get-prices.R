@@ -1,5 +1,12 @@
 get_card_price_history <- function(card_name, set) {
+  if ((card_name %in% c("Plains", "Island", "Swamp", "Mountain", "Forest")) &
+      !(set %in% c("Unglued", "Unhinged", "Unstable"))) {
+    stop("Don't price basic lands.")
+  }
   Sys.sleep(1)
+  print(card_name)
+  print(set)
+  print(goldfish_url(card_name, set))
   read_html(goldfish_url(card_name, set)) %>%
     xml_find_all("//script") %>%
     xml_text %>%
