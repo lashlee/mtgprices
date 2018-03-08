@@ -58,15 +58,14 @@ card_dat <- mtgsdk$Card$all()
 ```
 
 ```{r}
+#Already saved, no need to rerun.
 card_dat_parsed <- card_dat %>% 
   map_df(~list(name = .x$name, 
+               type = .x$type,
                set_name = .x$set_name, 
                number = ifelse(is.null(.x$number), NA_character_, .x$number),
-               has_alt_names = !is.null(.x$names) & length(.x$names) > 1 ))
-```
-
-
-```{r}
+               has_alt_names = !is.null(.x$names) & length(.x$names) > 1 ,
+               has_variations = !is.null(.x$variations) & length(.x$variations) > 0))
 saveRDS(card_dat_parsed, file = "card_dat.RDS")
 card_dat_parsed <- readRDS("card_dat.RDS")
 ```
@@ -76,11 +75,23 @@ trial_dat <- card_dat_parsed %>%
   filter(!has_alt_names | str_detect(number, "^[0-9]+$|^[0-9]+a$")) %>% 
   filter(!(name %in% basic_lands) | (set_name %in% c("Unglued", "Unhinged", "Unstable"))) %>% 
   filter(set_name != "Introductory Two-Player Set") %>% #WTF they're not even in MTG Goldfish?!
+  filter(set_name != "Planechase Anthology") %>% #Also not in MTG Goldfish. At least The Dark Barony isn't.
+  filter((type != "Conspiracy") | (set_name != "Magic: The Gathering—Conspiracy")) %>% #Goldfish doesn't include conspiracies from CNS either.
+  filter(!has_variations) %>% #Figure this out later. This is for cards like Fallen Empires Hymn to Tourach or Alliances Arcane Denial.
+  filter(set_name != "International Collector's Edition") %>% #Goldfish doesn't have them.
+  filter(set_name != "Collector's Edition") %>% 
+  filter(set_name != "Prerelease Events") %>% #Unfortunately I'm not sure how to tell which is foil and which is not.
+  filter(set_name != "Duels of the Planeswalkers") %>% #Not in paper or Magic Online.
+  filter(!(set_name %in% c("Unglued", "Unhinged", "Unstable"))) %>% #Exclude to start with for simplicity.
+  filter(name != "Kongming, \"Sleeping Dragon\"") %>% #For some reason many of their Kongming links are broken.
+  filter((name != "Phage the Untouchable Avatar") | (set_name != "Vanguard")) %>% #No price history available.
+  filter(!(type %in% c("Scheme", "Ongoing Scheme"))) %>% #No prices.
   sample_n(100)
 ```
 
 ```{r}
 trial_dat %>% 
+  select(name, set_name) %>% 
   pmap(~ write_card_price_history(card_name = ..1,
                                   set = ..2,
                                   directory = data_dir))
@@ -88,6 +99,39 @@ trial_dat %>%
 
 Some cards with multiple names have exceptions to note:
 * Who What When Where Why
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

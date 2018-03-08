@@ -3,7 +3,7 @@ get_card_price_history <- function(card_name, set) {
       !(set %in% c("Unglued", "Unhinged", "Unstable"))) {
     stop("Don't price basic lands.")
   }
-  Sys.sleep(1)
+  Sys.sleep(.5)
   print(card_name)
   print(set)
   print(goldfish_url(card_name, set))
