@@ -119,7 +119,7 @@ trial_dat <- card_dat_parsed %>%
   sample_n(100)
 ```
 
-```{r, results="hide"}
+```{r, results="hide", eval=FALSE}
 safely_write_card_price_history <- safely(write_card_price_history)
 error_behavior <- function(message) {write(toString(message), error_log_file_path, append=TRUE)}
 
@@ -132,6 +132,7 @@ tryCatch({
 ```
 
 Some cards with multiple names have exceptions to note:
+
 * Who What When Where Why
 
 
