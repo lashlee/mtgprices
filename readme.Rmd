@@ -95,7 +95,7 @@ card_dat_parsed <- readRDS("card_dat.RDS")
 
 ```{r}
 all_sets <- card_dat_parsed %>% distinct(set_name) %>% arrange(set_name) %>% unlist(use.names = FALSE)
-all_sets
+head(all_sets, 10)
 ```
 
 ```{r}
