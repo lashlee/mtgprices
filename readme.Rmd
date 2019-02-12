@@ -31,7 +31,7 @@ card_name <- "Snapcaster Mage"
 set <- "Innistrad"
 ```
 
-```{r}
+```{r eval=FALSE}
 get_card_price_history(card_name, set)
 ```
 
