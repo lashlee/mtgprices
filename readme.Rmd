@@ -21,29 +21,36 @@ error_log_file_path <- paste0(here(),"/get_price_error_",format(Sys.Date(),"%Y_%
 if(!file.exists(error_log_file_path)) file.create(error_log_file_path)
 ```
 
+Load the package.
+
 ```{r}
 load_all()
 data_dir <- "/home/john/data/mtg/"
 ```
+
+Snapcaster Mage from Innistrad will be our sample card.
 
 ```{r}
 card_name <- "Snapcaster Mage"
 set <- "Innistrad"
 ```
 
-```{r eval=FALSE}
-get_card_price_history(card_name, set)
-```
+Get and then print Snapcaster Mage's price history. Note that the assignment is just illustrative. `plot_card_price_history` will get the history on its own.
 
 ```{r}
+snapcaster_mage_price_history <- get_card_price_history(card_name, set)
 plot_card_price_history(card_name, set) %>% plot
 ```
+
+Now write down the history to disk.
 
 ```{r}
 write_card_price_history(card_name = card_name, 
                          set = set,
                          directory = data_dir)
 ```
+
+The `extract_card_info` function will get card information from the mtgsdk object.
 
 ```{r}
 extract_card_info <- function(card) {
@@ -83,26 +90,36 @@ card_dat_parsed <- card_dat %>%
 saveRDS(card_dat_parsed, file = "card_dat.RDS")
 ```
 
+There are some data on particular sets to watch out for included. I will eventually convert these to RDS to properly package them up.
+
 ```{r}
 no_go_sets <- read_tsv(file = "no_go_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
 core_sets <- read_tsv(file = "core_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
 expansion_sets <- read_tsv(file = "expansion_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
 ```
 
+For now bring in the data I've already retrieved and saved.
+
 ```{r}
 card_dat_parsed <- readRDS("card_dat.RDS")
 ```
+
+Here's an example command to pull all the sets.
 
 ```{r}
 all_sets <- card_dat_parsed %>% distinct(set_name) %>% arrange(set_name) %>% unlist(use.names = FALSE)
 head(all_sets, 10)
 ```
 
+And some simple checks:
+
 ```{r}
 all(no_go_sets %in% all_sets)
 all(core_sets %in% all_sets)
 all(expansion_sets %in% all_sets)
 ```
+
+Sample some trial data that you can then attempt to save later.
 
 ```{r}
 trial_dat <- card_dat_parsed %>% 
