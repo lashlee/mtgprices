@@ -1,0 +1,8 @@
+Error in .f(.x[[i]], ...): object 'X2' not found
+
+Error in .f(.x[[i]], ...): object 'X2' not found
+
+Error in .f(.x[[i]], ...): object 'X2' not found
+
+Error in UseMethod("read_xml"): no applicable method for 'read_xml' applied to an object of class "function"
+

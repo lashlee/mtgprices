@@ -8,14 +8,17 @@ output:
 This is my work in progress for parsing MTG Goldfish pages to extract card prices.
 
 ```{r}
-library(tidyverse,quietly = TRUE)
+suppressMessages(library(tidyverse))
 library(xml2)
 library(reticulate)
 library(devtools)
 library(roxygen2)
+library(here)
 options(tibble.print_max = Inf)
 use_python("/usr/bin/python3") #mtgsdk requires python3
 basic_lands <- c("Plains", "Island", "Swamp", "Mountain", "Forest")
+error_log_file_path <- paste0(here(),"/get_price_error_",format(Sys.Date(),"%Y_%m_%d"),".log")
+if(!file.exists(error_log_file_path)) file.create(error_log_file_path)
 ```
 
 ```{r}
@@ -26,6 +29,10 @@ data_dir <- "/home/john/data/mtg/"
 ```{r}
 card_name <- "Snapcaster Mage"
 set <- "Innistrad"
+```
+
+```{r}
+get_card_price_history(card_name, set)
 ```
 
 ```{r}
@@ -51,50 +58,77 @@ extract_card_info <- function(card) {
 }
 ```
 
-```{r}
+```{r eval=FALSE}
 mtgsdk <- import("mtgsdk")
-#card_dat <- mtgsdk$Card$where(set_name='Innistrad')$all()
 card_dat <- mtgsdk$Card$all()
 ```
 
-```{r}
+```{r eval=FALSE}
 #Already saved, no need to rerun.
 card_dat_parsed <- card_dat %>% 
   map_df(~list(name = .x$name, 
                type = .x$type,
                set_name = .x$set_name, 
                number = ifelse(is.null(.x$number), NA_character_, .x$number),
+               layout = .x$layout,
                has_alt_names = !is.null(.x$names) & length(.x$names) > 1 ,
-               has_variations = !is.null(.x$variations) & length(.x$variations) > 0))
+               has_variations = !is.null(.x$variations) & length(.x$variations) > 0)) %>% 
+  mutate(split_num = str_extract_all(number,"[0-9]+",simplify=TRUE)) %>% 
+  group_by(set_name, split_num) %>% 
+  #mutate(split_names = case_when(all(layout == "split", (set_name %in% expansion_sets) | (set_name %in% core_sets)) ~ paste0(name, collapse = " "), TRUE ~ ""))
+  mutate(split_name = case_when(layout == "split" ~ paste0(name, collapse = " "), TRUE ~ NA_character_)) %>% 
+  mutate(lookup_name = coalesce(split_name, name)) %>% 
+  ungroup
+
 saveRDS(card_dat_parsed, file = "card_dat.RDS")
+```
+
+```{r}
+no_go_sets <- read_tsv(file = "no_go_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
+core_sets <- read_tsv(file = "core_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
+expansion_sets <- read_tsv(file = "expansion_sets.tsv", col_names = "set", col_types = list(col_character())) %>% unlist
+```
+
+```{r}
 card_dat_parsed <- readRDS("card_dat.RDS")
 ```
 
 ```{r}
+all_sets <- card_dat_parsed %>% distinct(set_name) %>% arrange(set_name) %>% unlist(use.names = FALSE)
+all_sets
+```
+
+```{r}
+all(no_go_sets %in% all_sets)
+all(core_sets %in% all_sets)
+all(expansion_sets %in% all_sets)
+```
+
+```{r}
 trial_dat <- card_dat_parsed %>% 
+  #filter(!(set_name %in% no_go_sets)) %>% 
+  #filter(!(set_name %in% c("Unglued", "Unhinged", "Unstable"))) %>% #Exclude to start with for simplicity.
+  filter((set_name %in% expansion_sets) | (set_name %in% core_sets)) %>% 
   filter(!has_alt_names | str_detect(number, "^[0-9]+$|^[0-9]+a$")) %>% 
   filter(!(name %in% basic_lands) | (set_name %in% c("Unglued", "Unhinged", "Unstable"))) %>% 
-  filter(set_name != "Introductory Two-Player Set") %>% #WTF they're not even in MTG Goldfish?!
-  filter(set_name != "Planechase Anthology") %>% #Also not in MTG Goldfish. At least The Dark Barony isn't.
   filter((type != "Conspiracy") | (set_name != "Magic: The Gathering—Conspiracy")) %>% #Goldfish doesn't include conspiracies from CNS either.
   filter(!has_variations) %>% #Figure this out later. This is for cards like Fallen Empires Hymn to Tourach or Alliances Arcane Denial.
-  filter(set_name != "International Collector's Edition") %>% #Goldfish doesn't have them.
-  filter(set_name != "Collector's Edition") %>% 
-  filter(set_name != "Prerelease Events") %>% #Unfortunately I'm not sure how to tell which is foil and which is not.
-  filter(set_name != "Duels of the Planeswalkers") %>% #Not in paper or Magic Online.
-  filter(!(set_name %in% c("Unglued", "Unhinged", "Unstable"))) %>% #Exclude to start with for simplicity.
   filter(name != "Kongming, \"Sleeping Dragon\"") %>% #For some reason many of their Kongming links are broken.
   filter((name != "Phage the Untouchable Avatar") | (set_name != "Vanguard")) %>% #No price history available.
   filter(!(type %in% c("Scheme", "Ongoing Scheme"))) %>% #No prices.
   sample_n(100)
 ```
 
-```{r}
-trial_dat %>% 
-  select(name, set_name) %>% 
-  pmap(~ write_card_price_history(card_name = ..1,
-                                  set = ..2,
-                                  directory = data_dir))
+```{r, results="hide"}
+safely_write_card_price_history <- safely(write_card_price_history)
+error_behavior <- function(message) {write(toString(message), error_log_file_path, append=TRUE)}
+
+tryCatch({
+  trial_dat %>%
+    select(name, set_name) %>% 
+    pwalk(~ write_card_price_history(card_name = ..1, set = ..2, directory = data_dir))
+  }, error = error_behavior
+)
 ```
 
 Some cards with multiple names have exceptions to note:

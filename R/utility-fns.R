@@ -5,7 +5,8 @@ contains_price_data <- function(script,card_name) {
                                 card_name %>%
                                   str_replace_all(",","") %>%
                                   str_replace_all("'","&#39;") %>%
-                                  str_replace_all("â","a"))),
+                                  str_replace_all("â","a") %>%
+                                  str_replace_all("û","u"))),
       str_detect(script, "20[0-9]{2}-[0-9]{2}-[0-9]{2}, \\d+\\.*\\d*"))
 }
 
@@ -15,7 +16,8 @@ sanitize_name <- function(x) {
     str_replace_all(",","") %>%
     str_replace_all(":","") %>%
     str_replace_all("\\.","") %>%
-    str_replace_all("â","a")
+    str_replace_all("â","a") %>%
+    str_replace_all("û","u")
 }
 
 goldfish_set <- function(set) {
